@@ -42,5 +42,5 @@ class Train(object):
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-                if step % 10 == 0:
+                if step % 40 == 0:
                     print(loss.item())

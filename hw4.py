@@ -198,11 +198,11 @@ def entry():
     model = LSTM_Net(embedding, 250, 1, fix_embedding=True)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    trainer = Train(model, criterion, optimizer, 5, device="cpu")
+    trainer = Train(model, criterion, optimizer, num_epoch=5, device="cpu")
 
     fds = FileDataAccess("training_label.txt",
                          max_sentence=10, vocab=vocab)
-    trainer.start(fds.get_dataloader(batch_size=5))
+    trainer.start(fds.get_dataloader(batch_size=50))
 
 
 if __name__ == "__main__":

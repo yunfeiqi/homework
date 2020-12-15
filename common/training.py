@@ -33,7 +33,7 @@ class Train(object):
         loss_items = []
         steps = []
         for epoch in range(self.num_epoch):
-
+            print("Start Epoch:{}".format(epoch))
             for step, data in enumerate(data_train):
                 X = data[0]
                 y = data[1]
@@ -43,11 +43,11 @@ class Train(object):
                 # output: batch * 1 * 1
                 outputs = self.model(inputs)
                 # output: batch * 1
-                outputs = outputs.squeeze(dim=1)
+                outputs = outputs.squeeze()
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-                if step > 0 and step % 10 == 0:
+                if step > 0 and step % 100 == 0:
                     _loss = loss.item()
                     print(_loss)
                     loss_items.append(_loss)

@@ -10,6 +10,9 @@
 import torch
 from torch.nn import Module
 from torch.utils.data import dataloader
+from common.drawimg import draw_plot
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
 class Train(object):
@@ -27,7 +30,10 @@ class Train(object):
         # model to device
         self.model = self.model.to(self.device)
 
+        loss_items = []
+        steps = []
         for epoch in range(self.num_epoch):
+
             for step, data in enumerate(data_train):
                 X = data[0]
                 y = data[1]
@@ -41,5 +47,9 @@ class Train(object):
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-                if step % 10 == 0:
-                    print(loss.item())
+                if step > 0 and step % 10 == 0:
+                    _loss = loss.item()
+                    print(_loss)
+                    loss_items.append(_loss)
+                    steps.append(len(steps))
+                    draw_plot(steps, loss_items, "训练损失.png")

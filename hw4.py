@@ -149,7 +149,7 @@ class FileDataAccess(DataAccess):
                         word2idx[word] = id
                 else:
                     if word in self.vocab:
-                        id = word2idx.get[word]
+                        id = self.vocab[word]
                     else:
                         id = self.vocab['<UNK>']
                 idx2word.append(word)

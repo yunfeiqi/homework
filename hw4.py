@@ -149,12 +149,9 @@ class FileDataAccess(DataAccess):
                         word2idx[word] = id
                 else:
                     if word in self.vocab:
-                        id = word2idx.get(word, None)
-                        if id is None:
-                            id = len(word2idx)
-                            word2idx[word] = min(id, len(self.vocab))
+                        id = word2idx.get[word]
                     else:
-                        id = len(self.vocab)
+                        id = self.vocab['<UNK>']
                 idx2word.append(word)
                 id_line.append(id)
 
@@ -178,17 +175,22 @@ def make_embedding():
     embedding = word2vec.Word2Vec.load('w2v_all.model')
 
     embedding_dim = embedding.vector_size
+    word2id = {}
     for i, word in enumerate(embedding.wv.vocab):
         print('get words #{}'.format(i+1), end='\r')
+        word2id[word] = len(word2id)
+
         embedding_matrix.append(embedding[word])
     print('')
     embedding_matrix = torch.tensor(embedding_matrix)
 
     # add token
     vectors = torch.empty(2, embedding_dim)
+    word2id["<SPE>"] = len(word2id)
+    word2id["<UNK>"] = len(word2id)
     embedding_matrix = torch.cat([embedding_matrix, vectors], dim=0)
     print("total words: {}".format(len(embedding_matrix)))
-    return embedding_matrix, embedding.wv.vocab
+    return embedding_matrix, word2id
 
 
 def entry():

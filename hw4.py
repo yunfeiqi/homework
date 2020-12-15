@@ -193,13 +193,13 @@ def make_embedding():
 
 def entry():
     embedding, vocab = make_embedding()
-    model = LSTM_Net(None, 250, 1, fix_embedding=False)
+    model = LSTM_Net(embedding, 250, 1, fix_embedding=True)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
     trainer = Train(model, criterion, optimizer, 10, device="cuda")
 
     fds = FileDataAccess("training_label.txt",
-                         max_sentence=30)
+                         max_sentence=30,vocab=vocab)
     trainer.start(fds.get_dataloader(batch_size=5))
 
 

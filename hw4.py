@@ -196,7 +196,7 @@ def entry():
     model = LSTM_Net(None, 250, 1, fix_embedding=False)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    trainer = Train(model, criterion, optimizer, 5)
+    trainer = Train(model, criterion, optimizer, 5, device="gpu")
 
     fds = FileDataAccess("training_label.txt",
                          max_sentence=10)

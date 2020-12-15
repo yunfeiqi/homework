@@ -20,7 +20,7 @@ class Train(object):
         self.criterion = criterion
         self.optimizer = optimizer
         self.num_epoch = num_epoch
-        self.device = "cpu"
+        self.device = device
 
     def start(self, data_train: dataloader.DataLoader):
         self.model.train()

@@ -197,7 +197,7 @@ def entry():
     embedding, vocab = make_embedding()
     model = LSTM_Net(embedding, 250, 1, fix_embedding=True)
     criterion = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.00001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     trainer = Train(model, criterion, optimizer, 10, device="cuda")
 
     fds = FileDataAccess("training_label.txt",

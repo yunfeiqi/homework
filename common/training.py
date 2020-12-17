@@ -10,7 +10,7 @@
 import torch
 from torch.nn import Module
 from torch.utils.data import dataloader
-from common.drawimg import draw_plot, draw_dubble_y_2d
+from common.drawing import draw_plot, draw_dubble_y_2d
 from common.matric import evaluation
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"

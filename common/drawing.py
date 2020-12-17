@@ -36,4 +36,5 @@ def draw_dubble_y_2d(x, y1, y2, y1_label="label:y1", y2_label="label:y2", title=
     ax1.set_ylabel(y1_label)
     ax2.set_ylabel(y2_label)
 
-    plt.show()
+    plt.savefig(title)
+    plt.close()

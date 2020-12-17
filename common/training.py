@@ -10,7 +10,8 @@
 import torch
 from torch.nn import Module
 from torch.utils.data import dataloader
-from common.drawimg import draw_plot
+from common.drawimg import draw_plot, draw_dubble_y_2d
+from common.matric import evaluation
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -31,6 +32,7 @@ class Train(object):
         self.model = self.model.to(self.device)
 
         loss_items = []
+        acc_items = []
         steps = []
         for epoch in range(self.num_epoch):
             print("Start Epoch:{}".format(epoch))
@@ -52,4 +54,7 @@ class Train(object):
                     print(_loss)
                     loss_items.append(_loss)
                     steps.append(len(steps))
-                    draw_plot(steps, loss_items, "训练损失.png")
+                    _acc = evaluation(outputs, labels)
+                    acc_items.append(_acc)
+                    draw_dubble_y_2d(steps, loss_items,
+                                     acc_items, "训练损失-精度.png")

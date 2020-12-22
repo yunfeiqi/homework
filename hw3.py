@@ -171,7 +171,7 @@ class Classifier(nn.Module):
     def forward(self, x):
         out = self.cnn(x)
         out = out.view(out.size()[0], -1)
-        return self.fc(out)
+        return self.fn(out)
 
 
 # -------------------------------- 基础模型训练 --------------------------------

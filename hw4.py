@@ -1,4 +1,3 @@
-from numpy.lib.ufunclike import fix
 from common.training import Train
 from data.qdataloader import BaseDataset
 from common.file import read_all_lins
@@ -6,14 +5,12 @@ from common.file import check_exist
 from data.qdataloader import DataAccess
 import torch.optim as optim
 import torch
-from torch.nn import parameter
-from torch.nn.modules import batchnorm
-from torch.utils import data
-import os
 import torch
 from torch import nn
 
-from gensim.models import ldamodel, word2vec
+from gensim.models import word2vec
+
+from transformers import AutoTokenizer
 
 
 def evaluation(outputs, labels):
@@ -116,6 +113,7 @@ class FileDataAccess(DataAccess):
         self.max_sentence = max_sentence
         self.dataset = None
         self.vocab = vocab
+        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
         self.data_load()
 
     def data_load(self):

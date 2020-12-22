@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+'''
+@Time    :   2020/12/22 15:44:26
+@Author  :   sam.qi
+@Version :   1.0
+@Desc    :   Homework4 文本分类
+'''
+
+
+
+
 from common.training import Train
 from data.qdataloader import BaseDataset
 from common.file import read_all_lins

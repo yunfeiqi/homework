@@ -9,6 +9,8 @@
 
 
 from numpy.core.defchararray import mod
+from numpy.lib.function_base import _percentile_dispatcher
+from torch import optim
 import torch.nn as nn
 from torch.nn.modules.activation import ReLU
 from torch.nn.modules.batchnorm import BatchNorm2d
@@ -63,13 +65,13 @@ train_transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.RandomHorizontalFlip(),  # 图片水平旋转
     transforms.RandomRotation(15),  # 随机旋转图片
-    transforms.toTensor()  # 图片转Tensor，并惊醒归一化
+    transforms.ToTensor()  # 图片转Tensor，并惊醒归一化
 ])
 
 # testing 时不需要要做 data augmentation
 test_transform = transforms.Compose([
     transforms.ToPILImage(),
-    transforms.toTensor()
+    transforms.ToTensor()
 ])
 
 # 构造DataSet
@@ -108,27 +110,22 @@ x_p, y_p = readfile(pokemon_path, 1)
 digimon_path = "C:/data/images/digimon/"
 x_d, y_d = readfile(digimon_path, 0)
 
-train_x = x_p[:train_size]
-train_y = y_p[:train_size]
-val_x = x_p[train_size:val_size+train_size]
-val_y = y_p[train_size:val_size+train_size]
-test_x = x_p[-1*test_size:]
-test_y = y_p[-1*test_size:]
 
-train_x.extend(x_d[:train_size])
-train_y.extend(y_d[:train_size])
-val_x.extend(x_d[train_size:val_size+train_size])
-val_y.extend(y_d[train_size:val_size+train_size])
-test_x.extend(x_d[-1*test_size:])
-test_y.extend(y_d[-1*test_size:])
+train_x = np.append(x_p[:train_size], x_d[:train_size], axis=0)
+train_y = np.append(y_p[:train_size], y_d[:train_size], axis=0)
+
+
+val_x = np.append(x_p[train_size:val_size+train_size],
+                  x_d[train_size:val_size+train_size], axis=0)
+val_y = np.append(y_p[train_size:val_size+train_size],
+                  y_d[train_size:val_size+train_size], axis=0)
 
 train_set = ImgDataset(train_x, train_y, train_transform)
 val_set = ImgDataset(val_x, val_y, test_transform)
-test_set = ImgDataset(test_x, test_y, test_transform)
+
 
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
-test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
 
 # --------------------------------定义 模型--------------------------------
@@ -174,12 +171,12 @@ class Classifier(nn.Module):
     def forward(self, x):
         out = self.cnn(x)
         out = out.view(out.size()[0], -1)
-        return self.fc(out)
+        return self.fn(out)
 
 
-# -------------------------------- 模型训练 --------------------------------
+# -------------------------------- 基础模型训练 --------------------------------
 
-device = "cuda"
+device = "cpu"
 model = Classifier()
 model = model.to(device)
 loss = nn.CrossEntropyLoss()
@@ -225,3 +222,57 @@ def train():
         # print result
         print("{}-{}, Train Acc:{},Train Loss:{}, Val Acc:{}, Val Loss:{}".format(epoch + 1, num_epoch, train_acc / train_size,
                                                                                   train_loss / train_size, val_acc/val_size, val_loss/val_size))
+
+
+# -------------------------------- 将 Train 和 Val 合并训练更好模型 基础模型训练 --------------------------------
+train_val_x = np.concatenate((train_x, val_x), axis=0)
+train_val_y = np.concatenate((train_y, val_y), axis=0)
+train_val_set = ImgDataset(train_val_x, train_val_y, train_transform)
+train_val_loader = DataLoader(
+    train_val_set, batch_size=batch_size, shuffle=True)
+
+best_model = Classifier()
+best_model = best_model.to(device)
+loss = nn.CrossEntropyLoss()
+optimizer = optim.Adam(best_model.parameters(), lr=0.001)
+num_epoch = 30
+
+for epoch in range(num_epoch):
+    train_acc = 0
+    train_loss = 0
+    best_model.train()
+
+    for i, data in enumerate(train_val_loader):
+        optimizer.zero_grad()
+        X = data[0].to(device)
+        Y = data[1]
+        Y_hat = best_model(X)
+        batch_loss = loss(Y_hat, Y.to(device))
+        batch_loss.backward()
+        optimizer.step()
+
+        train_acc += np.sum(torch.argmax(Y_hat, dim=1).cpu() == Y.numpy())
+        train_loss += batch_loss.item()
+
+    print("{}-{}, Train Acc:{},Loss:{}".format(epoch+1, num_epoch, train_acc /
+                                               train_val_set.__len__(), train_loss/train_val_set.__len__()))
+
+# -------------------------------- 利用模型进行预测 --------------------------------
+test_x = x_p[-1*test_size:]
+test_y = y_p[-1*test_size:]
+test_x.extend(x_d[-1*test_size:])
+test_y.extend(y_d[-1*test_size:])
+test_set = ImgDataset(test_x, test_y, test_transform)
+test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+
+best_model.eval()
+test_acc = 0
+with torch.no_grad():
+    for i, data in enumerate(test_loader):
+        X = data[0]
+        Y = data[1]
+        Y_hat = best_model(X.to(device))
+        Y_hat_label = torch.argmax(Y_hat, dim=1)
+        test_acc += np.sum(Y_hat_label == Y.numpy())
+
+print("TestAcc:{}".format(test_acc/test_size))

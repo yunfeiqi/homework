@@ -218,8 +218,8 @@ def train():
                 Y_hat = model(X)
                 batch_loss = loss(Y_hat, Y.to(device))
 
-                val_acc += np.sum(torch.argmax(Y_hat,
-                                               dim=1).cpu() == Y.numpy())
+                val_acc += np.sum(np.argmax(Y_hat.cpu().data.numpy(),
+                                            axis=1) == Y.numpy())
                 val_loss += batch_loss.item()
 
         # print result
@@ -276,7 +276,7 @@ with torch.no_grad():
         X = data[0]
         Y = data[1]
         Y_hat = best_model(X.to(device))
-        Y_hat_label = torch.argmax(Y_hat, dim=1)
-        test_acc += np.sum(Y_hat_label == Y.numpy())
+        test_acc += np.sum(np.argmax(Y_hat.cpu().data.numpy(),
+                                     axis=1) == Y.numpy())
 
 print("TestAcc:{}".format(test_acc/test_set.__len__()))

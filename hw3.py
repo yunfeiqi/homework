@@ -104,10 +104,10 @@ class ImgDataset(Dataset):
 batch_size = 128
 
 # 分别将 Training Data testting Data 用readfile 读进来
-pokemon_path = "C:/data/images/pokemon/"
+pokemon_path = "/home/qiyunfei/code/homework/data/pokemon/"
 x_p, y_p = readfile(pokemon_path, 1)
 
-digimon_path = "C:/data/images/digimon/"
+digimon_path = "/home/qiyunfei/code/homework/data/digimon/"
 x_d, y_d = readfile(digimon_path, 0)
 
 

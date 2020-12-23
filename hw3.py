@@ -256,7 +256,8 @@ for epoch in range(num_epoch):
         batch_loss.backward()
         optimizer.step()
 
-        train_acc += np.sum(torch.argmax(Y_hat, dim=1).cpu() == Y.numpy())
+        train_acc += np.sum(np.argmax(Y_hat.cpu().data.numpy(),
+                                      axis=1) == Y.numpy())
         train_loss += batch_loss.item()
 
     print("{}-{}, Train Acc:{},Loss:{}".format(epoch+1, num_epoch, train_acc /

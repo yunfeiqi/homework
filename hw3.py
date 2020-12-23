@@ -199,9 +199,9 @@ def train():
             X = data[0]
             X = X.to(device)
             Y_hat = model(X)
-            Y = data[1].to(device)
+            Y = data[1]
 
-            batch_loss = loss(Y_hat, Y)
+            batch_loss = loss(Y_hat, Y.to(device))
             batch_loss.backward()
             optimizer.step()
 

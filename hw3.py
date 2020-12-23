@@ -220,9 +220,12 @@ def train():
                 val_loss += batch_loss.item()
 
         # print result
-        print("{}-{}, Train Acc:{},Train Loss:{}, Val Acc:{}, Val Loss:{}".format(epoch + 1, num_epoch, train_acc / train_size,
-                                                                                  train_loss / train_size, val_acc/val_size, val_loss/val_size))
+        print("{}-{}, Train Acc:{},Train Loss:{}, Val Acc:{}, Val Loss:{}".format(epoch + 1, num_epoch, train_acc / train_set.__len__(),
+                                                                                  train_loss / train_set.__len__(), val_acc/val_set.__len__(), val_loss/val_set.__len__()))
 
+
+# 训练
+train()
 
 # -------------------------------- 将 Train 和 Val 合并训练更好模型 基础模型训练 --------------------------------
 train_val_x = np.concatenate((train_x, val_x), axis=0)
@@ -235,7 +238,6 @@ best_model = Classifier()
 best_model = best_model.to(device)
 loss = nn.CrossEntropyLoss()
 optimizer = optim.Adam(best_model.parameters(), lr=0.001)
-num_epoch = 30
 
 for epoch in range(num_epoch):
     train_acc = 0
@@ -258,10 +260,9 @@ for epoch in range(num_epoch):
                                                train_val_set.__len__(), train_loss/train_val_set.__len__()))
 
 # -------------------------------- 利用模型进行预测 --------------------------------
-test_x = x_p[-1*test_size:]
-test_y = y_p[-1*test_size:]
-test_x.extend(x_d[-1*test_size:])
-test_y.extend(y_d[-1*test_size:])
+
+test_x = np.append(x_p[-1*test_size:], x_d[-1*test_size:], axis=0)
+test_y = np.append(y_p[-1*test_size:], y_d[-1*test_size:], axis=0)
 test_set = ImgDataset(test_x, test_y, test_transform)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
@@ -275,4 +276,4 @@ with torch.no_grad():
         Y_hat_label = torch.argmax(Y_hat, dim=1)
         test_acc += np.sum(Y_hat_label == Y.numpy())
 
-print("TestAcc:{}".format(test_acc/test_size))
+print("TestAcc:{}".format(test_acc/test_set.__len__()))

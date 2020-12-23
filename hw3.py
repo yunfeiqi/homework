@@ -176,7 +176,10 @@ class Classifier(nn.Module):
 
 # -------------------------------- 基础模型训练 --------------------------------
 
-device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda"
+else:
+    device = "cpu"
 model = Classifier()
 model = model.to(device)
 loss = nn.CrossEntropyLoss()

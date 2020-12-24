@@ -263,6 +263,7 @@ for epoch in range(num_epoch):
     print("{}-{}, Train Acc:{},Loss:{}".format(epoch+1, num_epoch, train_acc /
                                                train_val_set.__len__(), train_loss/train_val_set.__len__()))
 
+torch.save(best_model.state_dict(), "./hw3.pkl")
 # -------------------------------- 利用模型进行预测 --------------------------------
 
 test_x = np.append(x_p[-1*test_size:], x_d[-1*test_size:], axis=0)

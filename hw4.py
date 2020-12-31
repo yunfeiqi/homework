@@ -205,10 +205,10 @@ def make_embedding():
 
 def entry():
     embedding, vocab = make_embedding()
-    model = LSTM_Net(embedding, 250, 1, fix_embedding=True)
+    model = LSTM_Net(embedding, 250, 1, fix_embedding=False)
     criterion = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    trainer = Train(model, criterion, optimizer, num_epoch=5, device="cpu")
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    trainer = Train(model, criterion, optimizer, num_epoch=5, device="cuda")
 
     fds = FileDataAccess("training_label.txt",
                          max_sentence=10, vocab=vocab)

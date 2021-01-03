@@ -397,7 +397,7 @@ class configurations(object):
 def train_process(config):
     # 准备训练数据
     train_dataset = EN2CnDataset(
-        config.data_pth, config.max_output_len, 'training')
+        config.data_path, config.max_output_len, 'training')
     train_loader = DataLoader(
         train_dataset, batch_size=config.batch_size, shuffle=True)
     train_iter = infinite_iter(train_loader)

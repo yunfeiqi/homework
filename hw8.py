@@ -7,6 +7,7 @@
 @Desc    :   Homework 8 Seq2Seq
 '''
 
+import matplotlib.pyplot as plt
 from numpy.core.defchararray import mod
 from nltk.translate.bleu_score import SmoothingFunction
 from nltk.translate.bleu_score import sentence_bleu
@@ -418,7 +419,7 @@ def testing(model, dataloader, loss_function):
     return loss_sum/len(dataloader), bleu_score/n, result
 
 
-# ------------------------------- 配置类 --------------------------------
+# ------------------------------- z --------------------------------
 class configurations(object):
     def __init__(self):
         self.batch_size = 60
@@ -428,9 +429,9 @@ class configurations(object):
         self.dropout = 0.5
         self.lr = 0.00005
         self.max_output_len = 50              # 最後輸出句子的最大長度
-        self.num_steps = 350  # 12000                # 總訓練次數
+        self.num_steps = 12000                # 總訓練次數
         self.store_steps = 300                # 訓練多少次後須儲存模型
-        self.summary_steps = 50  # 300              # 訓練多少次後須檢驗是否有overfitting
+        self.summary_steps = 300              # 訓練多少次後須檢驗是否有overfitting
         self.load_model = False               # 是否需載入模型
         self.store_model_path = "./ckpt"      # 儲存模型的位置
         # 載入模型的位置 e.g. "./ckpt/model_{step}"
@@ -476,6 +477,7 @@ def train_process(config):
         total_steps += config.summary_steps
         print("\r", "val [{}] loss: {:.3f}, Perplexity: {:.3f}, blue score: {:.3f}".format(
             total_steps, val_loss, np.exp(val_loss), blue_score))
+    return train_losses, val_losses, bleu_scores
 
 
 def test_process(config):
@@ -503,6 +505,14 @@ train_losses, val_losses, bleu_scores = train_process(config)
 
 # ------------------------------- 开始测试模型 --------------------------------
 # config = configurations()
-# print('config:\n', vars(config))
-# test_loss, bleu_score = test_process(config)
-# print(f'test loss: {test_loss}, bleu_score: {bleu_score}')
+print('config:\n', vars(config))
+test_loss, bleu_score = test_process(config)
+print(f'test loss: {test_loss}, bleu_score: {bleu_score}')
+
+# ------------------------------- 【绘图】 Train Loss -------------------------------
+plt.figure()
+plt.plot(train_losses)
+plt.xlabel('次数')
+plt.ylabel('loss')
+plt.title('train loss')
+plt.show()

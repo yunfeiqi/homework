@@ -83,7 +83,7 @@ class EN2CnDataset(Dataset):
     def __getitem__(self, index):
         sentences = self.data[index]
         # 拆分中英文
-        sentences = re.split('[\r\n]', sentences)
+        sentences = re.split('[\t]', sentences)
         sentences = list(filter(None, sentences))
         assert len(sentences) == 2
 

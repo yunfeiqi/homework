@@ -7,6 +7,9 @@
 @Desc    :   Homework 8 Seq2Seq
 '''
 
+from nltk.translate.bleu_score import SmoothingFunction
+from nltk.translate.bleu_score import sentence_bleu
+import nltk
 import random
 import torch.nn as nn
 import re
@@ -316,6 +319,28 @@ def schedule_sampling():
 
     return 1
 
+
+def computebleu(sentences, targets):
+    score = 0
+    assert (len(sentences) == len(targets))
+
+    def cut_token(sentence):
+        tmp = []
+        for token in sentence:
+            if token == '<UNK>' or token.isdigit() or len(bytes(token[0], encoding='utf-8')) == 1:
+                tmp.append(token)
+            else:
+                tmp += [word for word in token]
+        return tmp
+
+    for sentence, target in zip(sentences, targets):
+        sentence = cut_token(sentence)
+        target = cut_token(target)
+        score += sentence_bleu([target], sentence, weights=(1, 0, 0, 0))
+
+    return score
+
+
 # ------------------------------- 模型训练 Training& testing --------------------------------
 
 
@@ -356,7 +381,10 @@ def train(model, optimizer, train_iter, loss_function, total_steps, summary_step
 def testing(model, dataloader, loss_function):
     model.eval()
     loss_sum = 0
+    bleu_score = 0
+    n = 0
 
+    result = []
     for source, target in dataloader:
         source, target = source.to(device), target.to(device)
         batch_size = source.size(0)
@@ -366,6 +394,20 @@ def testing(model, dataloader, loss_function):
 
         loss = loss_function(output, target)
         loss_sum += loss.item()
+
+        # 将预测结果转为文字
+        targets = target.view(source.size(0), -1)
+        preds = token2sentence(preds, dataloader.datset.int2word_cn)
+        sources = token2sentence(source, dataloader.dataset.int2word_en)
+        targets = token2sentence(target, dataloader.dataset.int2word_cn)
+        for source, pred, target in zip(sources, preds, targets):
+            result.append((source, pred, target))
+
+        # 计算Blue Score
+        bleu_score += computebleu(preds, targets)
+        n += batch_size
+    return loss_sum/len(dataloader), bleu_score/n, result
+
 
 # ------------------------------- 模型预测 Predict --------------------------------
 

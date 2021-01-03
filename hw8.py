@@ -324,24 +324,25 @@ def schedule_sampling():
 
 
 def computebleu(sentences, targets):
-    score = 0
-    assert (len(sentences) == len(targets))
+    # score = 0
+    # assert (len(sentences) == len(targets))
 
-    def cut_token(sentence):
-        tmp = []
-        for token in sentence:
-            if token == '<UNK>' or token.isdigit() or len(bytes(token[0], encoding='utf-8')) == 1:
-                tmp.append(token)
-            else:
-                tmp += [word for word in token]
-        return tmp
+    # def cut_token(sentence):
+    #     tmp = []
+    #     for token in sentence:
+    #         if token == '<UNK>' or token.isdigit() or len(bytes(token[0], encoding='utf-8')) == 1:
+    #             tmp.append(token)
+    #         else:
+    #             tmp += [word for word in token]
+    #     return tmp
 
-    for sentence, target in zip(sentences, targets):
-        sentence = cut_token(sentence)
-        target = cut_token(target)
-        score += sentence_bleu([target], sentence, weights=(1, 0, 0, 0))
+    # for sentence, target in zip(sentences, targets):
+    #     sentence = cut_token(sentence)
+    #     target = cut_token(target)
+    #     score += sentence_bleu([target], sentence, weights=(1, 0, 0, 0))
 
-    return score
+    # return score
+    return 0
 
 
 # ------------------------------- 模型训练 Training& testing --------------------------------
@@ -473,7 +474,7 @@ def train_process(config):
         bleu_scores.append(blue_score)
 
         total_steps += config.summary_steps
-        print("\r", "val [{}] loss: {:.3f}, Perplexity: {:.3f}, blue score: {:.3f}       ".format(
+        print("\r", "val [{}] loss: {:.3f}, Perplexity: {:.3f}, blue score: {:.3f}".format(
             total_steps, val_loss, np.exp(val_loss), blue_score))
 
 

@@ -335,8 +335,8 @@ def train(model, optimizer, train_iter, loss_function, total_steps, summary_step
         sources, target = sources.to(device), target.to(device)
         outputs, preds = model(sources, target, schedule_sampling())
 
-        #
-        outputs = outputs[:, 1:].reshap(-1, outputs.size(2))
+        # 忽略 Target 的第一个Token，因为它是BOS
+        outputs = outputs[:, 1:].reshape(-1, outputs.size(2))
         target = target[:, 1:].reshape(-1)
         loss = loss_function(outputs, target)
         loss.backward()

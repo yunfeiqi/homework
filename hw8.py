@@ -240,7 +240,7 @@ class Seq2Seq(nn.Module):
         # 开始 Encoder
         encoder_output, hidden = self.encoder(input)
         hidden = hidden.view(self.encoder.n_layers, 2, batch_size, -1)
-        hidden = torch.cat(hidden[:, -2, :, :], hidden[:, -1, :, :], dim=2)
+        hidden = torch.cat((hidden[:, -2, :, :], hidden[:, -1, :, :]), dim=2)
 
         # 开始 Decoder
         input = target[:, 0]

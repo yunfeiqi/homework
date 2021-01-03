@@ -128,7 +128,7 @@ class RNNEncoder(nn.Module):
                           dropout=dropout, batch_first=True, bidirectional=True)
         self.dropout = nn.Dropout(dropout)
 
-    def farward(self, input):
+    def forward(self, input):
         # input: batch * sequence_len
 
         # emb: batch * seq_len * emb_dim
@@ -158,7 +158,7 @@ class RNNDecoder(nn.Module):
         self.embedding2vocab3 = nn.Linear(self.hid_dim*4, self.cn_vocab_size)
         self.dropout = nn.Dropout(dropout)
 
-    def farward(self, input, hidden, encoder_output):
+    def forward(self, input, hidden, encoder_output):
         # input: [batch, vocab_size]
         # hidden: [batch ,layer * direction,hid_dim]
 
@@ -190,7 +190,7 @@ class Seq2Seq(nn.Module):
         self.decoder = decoder
         self.device = device
 
-    def farward(self, input, target, teacher_forcing_ratio):
+    def forward(self, input, target, teacher_forcing_ratio):
         # input: [batch,sequence]
         # target: [batch,target len]
         # teacher_foring_ratio: 有多少几率使用Target

@@ -90,7 +90,7 @@ class EN2CnDataset(Dataset):
         # 特殊子元
         BOS = self.word2int_en['<BOS>']
         EOS = self.word2int_en['<EOS>']
-        UNK = self.word2int_en['<UKS>']
+        UNK = self.word2int_en['<UNK>']
 
         # 在开头添加 BOS 结尾添加EOS，OOV 使用 UNK
         en, cn = [BOS], [BOS]

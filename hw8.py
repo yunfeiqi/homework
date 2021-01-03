@@ -397,7 +397,7 @@ def testing(model, dataloader, loss_function):
 
         # 将预测结果转为文字
         targets = target.view(source.size(0), -1)
-        preds = token2sentence(preds, dataloader.datset.int2word_cn)
+        preds = token2sentence(preds, dataloader.dataset.int2word_cn)
         sources = token2sentence(source, dataloader.dataset.int2word_en)
         targets = token2sentence(target, dataloader.dataset.int2word_cn)
         for source, pred, target in zip(sources, preds, targets):
@@ -424,7 +424,7 @@ class configurations(object):
         self.max_output_len = 50              # 最後輸出句子的最大長度
         self.num_steps = 12000                # 總訓練次數
         self.store_steps = 300                # 訓練多少次後須儲存模型
-        self.summary_steps = 300              # 訓練多少次後須檢驗是否有overfitting
+        self.summary_steps = 50  # 300              # 訓練多少次後須檢驗是否有overfitting
         self.load_model = False               # 是否需載入模型
         self.store_model_path = "./ckpt"      # 儲存模型的位置
         # 載入模型的位置 e.g. "./ckpt/model_{step}"

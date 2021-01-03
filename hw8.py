@@ -7,6 +7,7 @@
 @Desc    :   Homework 8 Seq2Seq
 '''
 
+from numpy.core.defchararray import mod
 from nltk.translate.bleu_score import SmoothingFunction
 from nltk.translate.bleu_score import sentence_bleu
 import nltk
@@ -345,7 +346,7 @@ def computebleu(sentences, targets):
     return 0
 
 
-# ------------------------------- 模型训练 Training& testing --------------------------------
+# ------------------------------- 模型训练 Training & testing --------------------------------
 
 
 def train(model, optimizer, train_iter, loss_function, total_steps, summary_steps, train_dataset):
@@ -382,6 +383,8 @@ def train(model, optimizer, train_iter, loss_function, total_steps, summary_step
     return model, optimizer, losses
 
 
+# ------------------------------- 模型预测 Predict --------------------------------
+
 def testing(model, dataloader, loss_function):
     model.eval()
     loss_sum = 0
@@ -415,9 +418,6 @@ def testing(model, dataloader, loss_function):
     return loss_sum/len(dataloader), bleu_score/n, result
 
 
-# ------------------------------- 模型预测 Predict --------------------------------
-
-
 # ------------------------------- 配置类 --------------------------------
 class configurations(object):
     def __init__(self):
@@ -428,7 +428,7 @@ class configurations(object):
         self.dropout = 0.5
         self.lr = 0.00005
         self.max_output_len = 50              # 最後輸出句子的最大長度
-        self.num_steps = 12000                # 總訓練次數
+        self.num_steps = 350  # 12000                # 總訓練次數
         self.store_steps = 300                # 訓練多少次後須儲存模型
         self.summary_steps = 50  # 300              # 訓練多少次後須檢驗是否有overfitting
         self.load_model = False               # 是否需載入模型
@@ -440,7 +440,7 @@ class configurations(object):
         self.device = device
 
 
-# ------------------------------- 开始训练模型 --------------------------------
+# ------------------------------- 训练&测试模型入口 --------------------------------
 
 def train_process(config):
     # 准备训练数据
@@ -478,6 +478,31 @@ def train_process(config):
             total_steps, val_loss, np.exp(val_loss), blue_score))
 
 
+def test_process(config):
+    test_dataset = EN2CnDataset(
+        config.data_path, config.max_output_len, 'testing')
+    test_loader = DataLoader(test_dataset, batch_size=1)
+    model, optimizer = build_model(
+        config, test_dataset.en_vocab_size, test_dataset.cn_vocab_size)
+    print("Finish build model")
+    loss_function = nn.CrossEntropyLoss(ignore_index=0)
+    model.eval()
+    test_loss, blue_score, result = testing(model, test_loader, loss_function)
+    # 保存结果
+    with open("./test_output.txt", 'w') as f:
+        for line in result:
+            print(line, file=f)
+
+    return test_loss, blue_score
+
+
+# ------------------------------- 开始训练模型 --------------------------------
 config = configurations()
 print('config:\n', vars(config))
 train_losses, val_losses, bleu_scores = train_process(config)
+
+# ------------------------------- 开始测试模型 --------------------------------
+# config = configurations()
+# print('config:\n', vars(config))
+# test_loss, bleu_score = test_process(config)
+# print(f'test loss: {test_loss}, bleu_score: {bleu_score}')

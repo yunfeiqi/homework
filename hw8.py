@@ -332,7 +332,7 @@ def train(model, optimizer, train_iter, loss_function, total_steps, summary_step
         optimizer.zero_grad()
 
         sources, target = next(train_iter)
-        source, target = sources.to(device), target.to(device)
+        sources, target = sources.to(device), target.to(device)
         outputs, preds = model(sources, target, schedule_sampling())
 
         #
@@ -387,8 +387,9 @@ class configurations(object):
         self.store_model_path = "./ckpt"      # 儲存模型的位置
         # 載入模型的位置 e.g. "./ckpt/model_{step}"
         self.load_model_path = None
-        self.data_path = "./cmn-eng"          # 資料存放的位置
+        self.data_path = ".data/cmn-eng"          # 資料存放的位置
         self.attention = False                # 是否使用 Attention Mechanism
+        self.device = device
 
 
 # ------------------------------- 开始训练模型 --------------------------------

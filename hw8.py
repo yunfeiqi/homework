@@ -472,7 +472,7 @@ def train_process(config):
         val_losses.append(val_loss)
         bleu_scores.append(blue_score)
 
-        total_steps += config.summay_steps
+        total_steps += config.summary_steps
         print("\r", "val [{}] loss: {:.3f}, Perplexity: {:.3f}, blue score: {:.3f}       ".format(
             total_steps, val_loss, np.exp(val_loss), blue_score))
 

@@ -401,8 +401,10 @@ def testing(model, dataloader, loss_function):
         # 将预测结果转为文字
         targets = target.view(source.size(0), -1)
         preds = token2sentence(preds, dataloader.dataset.int2word_cn)
-        sources = token2sentence(source, dataloader.dataset.int2word_en)
-        targets = token2sentence(target, dataloader.dataset.int2word_cn)
+        sources = token2sentence(
+            source.to_numpy(), dataloader.dataset.int2word_en)
+        targets = token2sentence(
+            targets.to_numpy(), dataloader.dataset.int2word_cn)
         for source, pred, target in zip(sources, preds, targets):
             result.append((source, pred, target))
 

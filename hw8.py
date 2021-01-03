@@ -290,11 +290,14 @@ def token2sentence(output, int2word):
         将数字转化为字
     '''
     sentences = []
-    for token in output:
-        word = int2word[str(int(token))]
-        if word == "<EOS>":
-            break
-        sentences.append(word)
+    for tokens in output:
+        sentence = []
+        for token in tokens:
+            word = int2word[str(int(token))]
+            if word == "<EOS>":
+                break
+            sentence.append(word)
+        sentences.append(sentence)
     return sentences
 
 

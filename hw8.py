@@ -365,7 +365,7 @@ def testing(model, dataloader, loss_function):
         target = target[:, 1:].reshape(-1)
 
         loss = loss_function(output, target)
-        loss_sum += loss.item(0)
+        loss_sum += loss.item()
 
 # ------------------------------- 模型预测 Predict --------------------------------
 

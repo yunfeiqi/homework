@@ -7,13 +7,10 @@
 @Desc    :   Homework 8 Seq2Seq
 '''
 
-from pickle import NONE
 import random
 import torch.nn as nn
 import re
-from numpy.core.defchararray import mod
 import torch
-from torch.nn.modules import dropout
 from torch.utils.data import Dataset
 
 import os

@@ -20,7 +20,7 @@ from torch.utils.data.dataloader import DataLoader
 
 # ------------------------------- 基础配置 ---------------------------------
 
-device = "cuda" if torch.cuda.is_avaliable() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # -------------------------------构造 Dataset class---------------------------------
 

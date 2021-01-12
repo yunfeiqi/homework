@@ -505,7 +505,7 @@ class configurations(object):
         # 載入模型的位置 e.g. "./ckpt/model_{step}"
         self.load_model_path = None
         # self.data_path = "./data/cmn-eng"          # 資料存放的位置
-        self.data_path = "C:\data\cmn-eng\cmn-eng"          # 資料存放的位置
+        self.data_path = "./data/cmn-eng"          # 資料存放的位置
         self.isatt = False                # 是否使用 Attention Mechanism
         self.device = device
 

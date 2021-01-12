@@ -7,6 +7,7 @@
 @Desc    :   Homework 8 Seq2Seq
 '''
 
+import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from numpy.core.defchararray import mod
 from nltk.translate.bleu_score import SmoothingFunction
@@ -36,9 +37,14 @@ class LabelTransform(object):
         self.pad = pad
 
     def __call__(self, label):
+        mask = np.ones(label.shape[0])
+
         label = np.pad(
             label, (0, (self.size - label.shape[0])), mode='constant', constant_values=self.pad)
-        return label
+        mask = np.pad(
+            mask, (0, (self.size - mask.shape[0])), mode='constant', constant_values=1)
+
+        return label, mask
 
 
 class EN2CnDataset(Dataset):
@@ -56,7 +62,7 @@ class EN2CnDataset(Dataset):
 
         # 加载数据集
         self.data = []
-        with open(os.path.join(self.root, f'{set_name}.txt'), 'r') as f:
+        with open(os.path.join(self.root, f'{set_name}.txt'), 'r', encoding='utf-8') as f:
             for line in f:
                 self.data.append(line)
 
@@ -74,10 +80,10 @@ class EN2CnDataset(Dataset):
         '''
             根据不同的语言，加载不同的Vocab Map
         '''
-        with open(os.path.join(self.root, f'word2int_{lang}.json'), 'r') as f:
+        with open(os.path.join(self.root, f'word2int_{lang}.json'), 'r', encoding='utf-8') as f:
             word2int = json.load(f)
 
-        with open(os.path.join(self.root, f"int2word_{lang}.json"), 'r') as f:
+        with open(os.path.join(self.root, f"int2word_{lang}.json"), 'r', encoding='utf-8') as f:
             int2word = json.load(f)
 
         return word2int, int2word
@@ -105,7 +111,7 @@ class EN2CnDataset(Dataset):
             en.append(self.word2int_en.get(word, UNK))
         en.append(EOS)
 
-        sentence = re.split(" ", sentence[1])
+        sentence = re.split(" ", sentences[1])
         sentence = list(filter(None, sentence))
         for word in sentence:
             cn.append(self.word2int_cn.get(word, UNK))
@@ -113,13 +119,58 @@ class EN2CnDataset(Dataset):
 
         en, cn = np.array(en), np.array(cn)
         # 将句子补齐
-        en, cn = self.transform(en), self.transform(cn)
+        en, en_mask = self.transform(en)
+        cn, cn_mask = self.transform(cn)
         en, cn = torch.LongTensor(en), torch.LongTensor(cn)
+        en_mask, cn_mask = torch.LongTensor(en_mask), torch.LongTensor(cn_mask)
 
-        return en, cn
+        return en, cn, en_mask, cn_mask
 
 
 # ------------------------------- 模型部分 Module --------------------------------
+
+
+class Attention(nn.Module):
+    '''
+        当输入比较长，单独靠 Content Vector 无法获取整个意思时候，使用Attention Mechanism 来体通过 Decoder 更多信息
+        主要是根据现在的Decoder Hidden State 去和Encoder outputs 中，那些与其有比较高的相关，根据相关性数值决定给Decoder 更多信息
+        常见的 Attention 是用Decoder Hidden State 和Encoder outputs 计算 Dot Product，再对算出来的值做Softmax，最后根据Softmax值
+        对Encoder outpus 做weight sum
+    '''
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, encoder_output, decoder_hidden, source_mask=None):
+        '''
+            encoder_output: [batch,seq,hidden_dim * direction]
+            decoder_hidden:[layers * direction,batch,hidden_dim]
+            Decoder的每一层都和Output做Attention操作
+
+        '''
+        # encoder 变换，将Encoder output变成 [batch,seq,hidden]
+        layer, batch, hidden = decoder_hidden.size()
+
+        # Query * key
+        decoder_hidden = decoder_hidden.permute(1, 0, 2)
+        encoder_output_key = encoder_output.permute(0, 2, 1)
+        attn = torch.matmul(decoder_hidden, encoder_output_key)
+
+        # mask
+        if source_mask is not None:
+            source_mask = source_mask.view(batch, 1, -1)
+            attn = attn.masked_fill(source_mask == 1, -1e9)
+
+        attn = F.softmax(attn, dim=-1)
+
+        # compute value
+        attn = torch.matmul(attn, encoder_output)
+
+        # attn 转化
+        attn = attn.view(layer, batch, hidden)
+
+        return attn
+
 
 class RNNEncoder(nn.Module):
     def __init__(self, vocab_size, emb_dim, hid_dim, n_layers, dropout=0.02):
@@ -154,6 +205,7 @@ class RNNDecoder(nn.Module):
         self.n_layers = n_layers
         self.embedding = nn.Embedding(cn_vocab_size, emb_dim)
         self.isatt = isatt
+        self.attn = Attention()
 
         self.input_dim = emb_dim
         self.rnn = nn.GRU(self.input_dim, self.hid_dim,
@@ -163,7 +215,7 @@ class RNNDecoder(nn.Module):
         self.embedding2vocab3 = nn.Linear(self.hid_dim*4, self.cn_vocab_size)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, input, hidden, encoder_output):
+    def forward(self, input, hidden, encoder_output, source_mask):
         # input: [batch, vocab_size]
         # hidden: [batch ,layer * direction,hid_dim]
 
@@ -173,6 +225,10 @@ class RNNDecoder(nn.Module):
 
         # output: [batch ,1, hid_dim ]
         # hidden :[n_layer,batch size,hid_dim]
+
+        if self.isatt:
+            # 如果采用Attention
+            hidden = self.attn(encoder_output, hidden, source_mask)
         output, hidden = self.rnn(embeded, hidden)
         output = self.embedding2vocab1(output.squeeze(1))
         output = self.embedding2vocab2(output)
@@ -186,7 +242,7 @@ class Seq2Seq(nn.Module):
         接受输入传给Encoder
         将Encoder 的输出传给Decoder
         不断的将Decoder 输出回传给Decoder，进行解码
-        解码完成，将Decoder 输出回传
+        解码完成，将 Decoder 输出回传
     '''
 
     def __init__(self, encoder, decoder, device):
@@ -195,12 +251,13 @@ class Seq2Seq(nn.Module):
         self.decoder = decoder
         self.device = device
 
-    def forward(self, input, target, teacher_forcing_ratio):
+    def forward(self, input, target, source_mask, target_mask, teacher_forcing_ratio):
         # input: [batch,sequence]
         # target: [batch,target len]
         # teacher_foring_ratio: 有多少几率使用Target
         batch_size = target.size(0)
         target_len = target.size(1)
+        maxlen = torch.max(target.sum(dim=-1)).item()
         vocab_size = self.decoder.cn_vocab_size
 
         # 存储结果
@@ -221,9 +278,10 @@ class Seq2Seq(nn.Module):
         preds = []
 
         # ** 开始 Decoder **
-        for step in range(target_len):
+        for step in range(maxlen):
+            # decoder_output: [batch,CN_vocab_size]
             decoder_output, hidden = self.decoder(
-                input, hidden, encoder_output)
+                input, hidden, encoder_output, source_mask)
             outputs[:, step] = decoder_output
             teacher_force = random.random() <= teacher_forcing_ratio
             top1 = decoder_output.argmax(1)
@@ -233,7 +291,7 @@ class Seq2Seq(nn.Module):
         preds = torch.cat(preds, 1)
         return outputs, preds
 
-    def inference(self, input, target):
+    def inference(self, input, target, source_mask):
         # TODO Use Beam Search
 
         batch_size = input.size(0)
@@ -248,12 +306,15 @@ class Seq2Seq(nn.Module):
         hidden = torch.cat((hidden[:, -2, :, :], hidden[:, -1, :, :]), dim=2)
 
         # 开始 Decoder
+        # input: [batch,1]
         input = target[:, 0]
         preds = []
         for step in range(input_len):
+            # decoder_output:[batch,1,hid_dim]
             decoder_output, hidden = self.decoder(
-                input, hidden, encoder_output)
+                input, hidden, encoder_output, source_mask)
             outputs[:, step] = decoder_output
+            # top1:[batch,vocab]
             top1 = decoder_output.argmax(1)
             input = top1
             preds.append(top1.unsqueeze(1))
@@ -322,7 +383,7 @@ def schedule_sampling():
         Schedule Sampling 策略
     '''
 
-    return 1
+    return 0
 
 
 def computebleu(sentences, targets):
@@ -347,6 +408,10 @@ def computebleu(sentences, targets):
     return 0
 
 
+def save_model(model, optimizer, store_model_path, step):
+    torch.save(model.state_dict(), f'{store_model_path}/model_{step}.ckpt')
+    return
+
 # ------------------------------- 模型训练 Training & testing --------------------------------
 
 
@@ -362,9 +427,11 @@ def train(model, optimizer, train_iter, loss_function, total_steps, summary_step
     for step in range(summary_steps):
         optimizer.zero_grad()
 
-        sources, target = next(train_iter)
-        sources, target = sources.to(device), target.to(device)
-        outputs, preds = model(sources, target, schedule_sampling())
+        sources, target, source_mask, target_mask = next(train_iter)
+        sources, target, source_mask, target_mask = sources.to(device), target.to(
+            device), source_mask.to(device), target_mask.to(device)
+        outputs, preds = model(sources, target, source_mask,
+                               target_mask, schedule_sampling())
 
         # 忽略 Target 的第一个Token，因为它是BOS
         outputs = outputs[:, 1:].reshape(-1, outputs.size(2))
@@ -393,10 +460,11 @@ def testing(model, dataloader, loss_function):
     n = 0
 
     result = []
-    for source, target in dataloader:
-        source, target = source.to(device), target.to(device)
+    for source, target, source_mask, target_mask in dataloader:
+        source, target, source_mask, target_mask = source.to(
+            device), target.to(device), source_mask.to(device), target_mask.to(device)
         batch_size = source.size(0)
-        output, preds = model.inference(source, target)
+        output, preds = model.inference(source, target, source_mask)
         output = output[:, 1:].reshape(-1, output.size(2))
         target = target[:, 1:].reshape(-1)
 
@@ -419,7 +487,7 @@ def testing(model, dataloader, loss_function):
     return loss_sum/len(dataloader), bleu_score/n, result
 
 
-# ------------------------------- z --------------------------------
+# ------------------------------- 配置类 --------------------------------
 class configurations(object):
     def __init__(self):
         self.batch_size = 60
@@ -436,7 +504,8 @@ class configurations(object):
         self.store_model_path = "./ckpt"      # 儲存模型的位置
         # 載入模型的位置 e.g. "./ckpt/model_{step}"
         self.load_model_path = None
-        self.data_path = "./data/cmn-eng"          # 資料存放的位置
+        # self.data_path = "./data/cmn-eng"          # 資料存放的位置
+        self.data_path = "C:\data\cmn-eng\cmn-eng"          # 資料存放的位置
         self.isatt = False                # 是否使用 Attention Mechanism
         self.device = device
 
@@ -477,6 +546,13 @@ def train_process(config):
         total_steps += config.summary_steps
         print("\r", "val [{}] loss: {:.3f}, Perplexity: {:.3f}, blue score: {:.3f}".format(
             total_steps, val_loss, np.exp(val_loss), blue_score))
+
+        # 保存模型
+        if total_steps % config.store_steps == 0 or total_steps >= config.num_steps:
+            save_model(model, optimizer, config.store_model_path, total_steps)
+            with open(f'{config.store_model_path}/output_{total_steps}.txt', 'w') as f:
+                for line in result:
+                    print(line, file=f)
     return train_losses, val_losses, bleu_scores
 
 
